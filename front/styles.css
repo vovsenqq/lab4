@@ -1,0 +1,27 @@
+#image-upload {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+}
+#button-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 50px;
+}
+#original-image, #second-image {
+    display: inline-block;
+    margin-top: 0px;
+    width: 640px;
+    height: auto;
+    margin-bottom: 10px;
+    margin-left: 10px;
+}
+#image-container, #second-image-container {
+    display: flex;
+    justify-content: start;
+}
+#image-container img, #second-image-container img {
+    width: 200px;
+    height: auto;
+    margin: 10px;
+}
