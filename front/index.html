@@ -5,12 +5,24 @@
 </head>
 <body>
     <input type="file" id="image-upload" accept=".bmp">
-    <div id="button-container">
-        <button id="send-request">Отправить запрос</button>
-    </div>
-    <div id="image-section">
+    <div id="image-section" style="margin-top: 40px">
         <img id="original-image">
         <div id="image-container"></div>
+    </div>
+    <div id="button-container">
+        <button id="reset-button">Сброс</button>
+        <div id="button-container2">
+            <button id="add-bipolar">Добавить биполярный шум</button>
+            <button id="add-unipolar">Добавить униполярный шум</button>
+        </div>
+        <input type="range" min="1" max="10" value="5" class="slider" id="myRange">
+        <p style="font: italic small-caps bold 16px/2 cursive">Сколько % пикселей "зашумить": <span id="demo"></span> %</p>
+
+        <button id="send-contrharmonic-mean" style="margin-top: 30px;">Фильтр среднего контргармонического</button>
+        <button id="send-arithmetic-mean">Фильтр средне арифметического</button>
+
+        <div id="grid" style="margin-top: 30px;"></div>
+        <input type="range" min="3" max="9" step="2" value="3" id="slider_mask" style="margin-top: 20px;">
     </div>
     <div id="second-image-section">
         <img id="second-image">

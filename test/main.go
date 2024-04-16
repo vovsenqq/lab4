@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	_ "image/png"
 	"os"
 
 	"golang.org/x/image/bmp"
@@ -17,7 +18,7 @@ type Pixel struct {
 }
 
 func main() {
-	img, err := openImage("D:/goback/images/1.bmp")
+	img, err := openImage("D:/goback/test/1.png")
 	if err != nil {
 		fmt.Println("Error: Image could not be opened or decoded")
 		os.Exit(1)
@@ -30,19 +31,24 @@ func main() {
 	}
 
 	// Define a 3x3 kernel
+	// kernel := [][]int{
+	// 	{1, 4, 6, 4, 1},
+	// 	{4, 16, 24, 16, 4},
+	// 	{6, 24, 36, 24, 6},
+	// 	{4, 16, 24, 16, 4},
+	// 	{1, 4, 6, 4, 1},
+	// }
 	kernel := [][]int{
-		{1, 4, 6, 4, 1},
-		{4, 16, 24, 16, 4},
-		{6, 24, 36, 24, 6},
-		{4, 16, 24, 16, 4},
-		{1, 4, 6, 4, 1},
+		{1, 1, 1},
+		{1, 1, 1},
+		{1, 1, 1},
 	}
 
 	// Convolve the image with the kernel
 	convolvedPixels, err := convolve(pixels, kernel)
-	for i := 0; i < 20; i++ {
-		convolvedPixels, err = convolve(convolvedPixels, kernel)
-	}
+	// for i := 0; i < 20; i++ {
+	// 	convolvedPixels, err = convolve(convolvedPixels, kernel)
+	// }
 	if err != nil {
 		fmt.Println("Error: Image could not be convolved")
 		os.Exit(1)
@@ -115,11 +121,6 @@ func convolve(pixels [][]Pixel, kernel [][]int) ([][]Pixel, error) {
 	height := len(pixels)
 	width := len(pixels[0])
 	kernelSize := len(kernel)
-
-	// The kernel size must be odd
-	if kernelSize%2 == 0 {
-		return nil, fmt.Errorf("kernel size must be odd")
-	}
 
 	// Calculate the sum of the kernel
 	kernelSum := 0

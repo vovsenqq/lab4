@@ -1,21 +1,83 @@
+body {
+    display: flex;
+    justify-content: space-between; /* Распределяет элементы равномерно по горизонтали */
+    min-height: 90vh;
+}
+#grid {
+    display: grid;
+    justify-content: center;
+    height: 300px;
+    width: 300px;
+}
+.cell {
+    border: 1px solid #000;
+    background-color: #ddd;
+}
 #image-upload {
     position: fixed;
     top: 10px;
     left: 10px;
 }
+
+#button-container2 {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between; /* или space-around или space-evenly */
+    align-items: center;
+    margin-top: 20px;
+}
+#button-container2 button {
+    flex-grow: 1;
+    margin: 0 10px;
+    background-color: #4CAF50; /* Зеленый фон */
+    color: white; /* Белый текст */
+    padding: 15px 32px; /* Отступы внутри кнопки */
+    text-align: center; /* Выравнивание текста по центру */
+    text-decoration: none; /* Удаление подчеркивания */
+    display: inline-block;
+    font-size: 16px;
+    border: none; /* Удаление границы */
+    border-radius: 12px; /* Скругленные углы */
+    transition-duration: 0.4s; /* Добавление анимации */
+}
+
 #button-container {
     display: flex;
+    flex-direction: column;
     justify-content: center;
+    align-items: center;
     margin-top: 50px;
 }
+
+#button-container button {
+    width: 200px;
+    margin-bottom: 10px;
+    background-color: #4CAF50; /* Зеленый фон */
+    color: white; /* Белый текст */
+    padding: 15px 32px; /* Отступы внутри кнопки */
+    text-align: center; /* Выравнивание текста по центру */
+    text-decoration: none; /* Удаление подчеркивания */
+    display: inline-block;
+    font-size: 16px;
+    border: none; /* Удаление границы */
+    border-radius: 12px; /* Скругленные углы */
+    transition-duration: 0.4s; /* Добавление анимации */
+}
+
+#button-container button:hover {
+    background-color: #45a049; /* Изменение цвета фона при наведении */
+}
+
 #original-image, #second-image {
     display: inline-block;
     margin-top: 0px;
     width: 640px;
-    height: auto;
+    height: 600px;
+    object-fit: contain;
     margin-bottom: 10px;
     margin-left: 10px;
 }
+
 #image-container, #second-image-container {
     display: flex;
     justify-content: start;
