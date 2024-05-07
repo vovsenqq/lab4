@@ -10,20 +10,20 @@
         <div id="image-container"></div>
     </div>
     <div id="button-container">
-        <button id="reset-button">Сброс</button>
+        <button id="reset-button">Reset</button>
         <div id="button-container2">
-            <button id="add-bipolar">Добавить биполярный шум</button>
-            <button id="add-unipolar">Добавить униполярный шум</button>
+            <button id="add-bipolar">Add bipolar noise</button>
+            <button id="add-unipolar">Add unipolar noise</button>
         </div>
         <input type="range" min="1" max="10" value="5" class="slider" id="myRange">
-        <p style="font: italic small-caps bold 16px/2 cursive">Сколько % пикселей "зашумить": <span id="demo"></span> %</p>
+        <p style="font: italic small-caps bold 16px/2 cursive">How much % noise add: <span id="demo"></span> %</p>
 
-        <button id="send-contrharmonic-mean" style="margin-top: 30px;">Фильтр среднего контргармонического</button>
+        <button id="send-contrharmonic-mean" style="margin-top: 30px;">Contraharmonic mean</button>
         <select id="noise-type" style="margin-bottom: 20px; margin-top: 10px;">
-            <option value="white">Белый шум</option>
-            <option value="black">Черный шум</option>
+            <option value="white">White noise</option>
+            <option value="black">Black noise</option>
         </select>
-        <button id="send-arithmetic-mean">Фильтр средне арифметического</button>
+        <button id="send-arithmetic-mean">Arithmetic mean</button>
 
         <div id="grid" style="margin-top: 30px;"></div>
         <input type="range" min="3" max="9" step="2" value="3" id="slider_mask" style="margin-top: 20px;">
