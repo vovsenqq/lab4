@@ -19,12 +19,16 @@
         <p style="font: italic small-caps bold 16px/2 cursive">Сколько % пикселей "зашумить": <span id="demo"></span> %</p>
 
         <button id="send-contrharmonic-mean" style="margin-top: 30px;">Фильтр среднего контргармонического</button>
+        <select id="noise-type" style="margin-bottom: 20px; margin-top: 10px;">
+            <option value="white">Белый шум</option>
+            <option value="black">Черный шум</option>
+        </select>
         <button id="send-arithmetic-mean">Фильтр средне арифметического</button>
 
         <div id="grid" style="margin-top: 30px;"></div>
         <input type="range" min="3" max="9" step="2" value="3" id="slider_mask" style="margin-top: 20px;">
     </div>
-    <div id="second-image-section">
+    <div id="second-image-section" style="margin-top: 40px">
         <img id="second-image">
         <div id="second-image-container"></div>
     </div>

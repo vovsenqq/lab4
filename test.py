@@ -1,32 +1,39 @@
-n = int(input())
-arr = list(map(int, input().split()))
+n = int(input().strip())
 
-# n = 8
-# arr = [1, 3, 5, 7, 9, 2, 2, 2]
+def check_win(board, player, last_move):
+    directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
+    for dx, dy in directions:
+        count = 1
+        for i in range(1, 5):
+            if (last_move[0] + dx * i, last_move[1] + dy * i) in board[player]:
+                count += 1
+            else:
+                break
+        for i in range(1, 5):
+            if (last_move[0] - dx * i, last_move[1] - dy * i) in board[player]:
+                count += 1
+            else:
+                break
+        if count >= 5:
+            return True
+    return False
 
-
-ans = ''
-
-counter_even = 0
-counter_odd = 0
+board = {1: set(), 2: set()}
+winner = None
 
 for i in range(n):
-    if arr[i] % 2 == 0:
-        counter_even += 1
+    x, y = map(int, input().split())
+    player = 1 if i % 2 == 0 else 2
+    board[player].add((x, y))
+    
+    if check_win(board, player, (x, y)):
+        winner = "First" if player == 1 else "Second"
+        break
+
+if winner:
+    if i + 1 < n:
+        print("Inattention")
     else:
-        counter_odd += 1
-
-
-if counter_odd % 2 == 0:
-    status = 0
-    for i in range(n - 1):
-        if ((arr[i] % 2 == 0 and arr[i+1] % 2 == 1) or ((arr[i] % 2 == 1 and arr[i+1] % 2 == 0))) and status == 0:
-            ans = ans + 'x'
-            status = 1
-        else:
-            ans = ans + '+'
+        print(winner)
 else:
-    for i in range(n - 1):
-        ans = ans + '+'
-
-print(ans)
+    print("Draw")

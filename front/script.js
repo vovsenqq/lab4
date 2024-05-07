@@ -69,23 +69,25 @@ var addUnipolarNoise = createNoiseFunction();
 document.getElementById('add-unipolar').addEventListener('click', function() {
     var canvas = document.createElement('canvas');
     var imageCopy = globalImage.cloneNode(true);
-    canvas.width = imageCopy.width;
-    canvas.height = imageCopy.height;
-    var ctx = canvas.getContext('2d');
-    ctx.drawImage(imageCopy, 0, 0, imageCopy.width, imageCopy.height);
-    var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    imageCopy.onload = function() {
+        canvas.width = imageCopy.width;
+        canvas.height = imageCopy.height;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(imageCopy, 0, 0, imageCopy.width, imageCopy.height);
+        var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-    var noisePercent = document.getElementById('myRange').value;
-    var noisyImageData = addUnipolarNoise(imageData, noisePercent);
+        var noisePercent = document.getElementById('myRange').value;
+        var noisyImageData = addUnipolarNoise(imageData, noisePercent);
 
-    ctx.putImageData(noisyImageData, 0, 0);
-    document.getElementById('original-image').src = canvas.toDataURL();
+        ctx.putImageData(noisyImageData, 0, 0);
+        document.getElementById('original-image').src = canvas.toDataURL();
 
-    var noisyImage = new Image();
-    noisyImage.onload = function() {
-        imageToChannels(noisyImage); // обновляем изображения, разбитые по каналам
-    };
-    noisyImage.src = canvas.toDataURL();
+        var noisyImage = new Image();
+        noisyImage.onload = function() {
+            imageToChannels(noisyImage); // обновляем изображения, разбитые по каналам
+        };
+        noisyImage.src = canvas.toDataURL();
+    }
 });
 
 
@@ -106,68 +108,112 @@ function addBipolarNoise(imageData, noisePercent) {
 document.getElementById('add-bipolar').addEventListener('click', function() {
     var canvas = document.createElement('canvas');
     var imageCopy = globalImage.cloneNode(true);
-    canvas.width = imageCopy.width;
-    canvas.height = imageCopy.height;
-    var ctx = canvas.getContext('2d');
-    ctx.drawImage(imageCopy, 0, 0, imageCopy.width, imageCopy.height);
-    var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    imageCopy.onload = function() {
+        canvas.width = imageCopy.width;
+        canvas.height = imageCopy.height;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(imageCopy, 0, 0, imageCopy.width, imageCopy.height);
+        var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-    var noisePercent = document.getElementById('myRange').value;
-    var noisyImageData = addBipolarNoise(imageData, noisePercent);
+        var noisePercent = document.getElementById('myRange').value;
+        var noisyImageData = addBipolarNoise(imageData, noisePercent);
 
-    ctx.putImageData(noisyImageData, 0, 0);
-    document.getElementById('original-image').src = canvas.toDataURL();
+        ctx.putImageData(noisyImageData, 0, 0);
+        document.getElementById('original-image').src = canvas.toDataURL();
 
-    var noisyImage = new Image();
-    noisyImage.onload = function() {
-        imageToChannels(noisyImage); // обновляем изображения, разбитые по каналам
-    };
-    noisyImage.src = canvas.toDataURL();
+        var noisyImage = new Image();
+        noisyImage.onload = function() {
+            imageToChannels(noisyImage); // обновляем изображения, разбитые по каналам
+        };
+        noisyImage.src = canvas.toDataURL();
+    }
 });
 
+
+
+function convertToBlob(imageBlob) {
+    return new Promise((resolve, reject) => {
+        var img = new Image();
+        img.onload = function() {
+            var canvas = document.createElement('canvas');
+            canvas.width = this.width;
+            canvas.height = this.height;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(this, 0, 0);
+            canvas.toBlob(resolve, 'image/png');
+        };
+        img.onerror = reject;
+        img.src = URL.createObjectURL(imageBlob);
+    });
+}
+
+document.getElementById('send-arithmetic-mean').addEventListener('click', function() {
+    var img = document.getElementById('original-image');
+    var formData = new FormData();
+    fetch(img.src)
+        .then(response => response.blob())
+        .then(image => {
+            return convertToBlob(image);  // Преобразуем изображение в PNG
+        })
+        .then(pngImage => {
+            formData.append('image', pngImage);
+            formData.append('kernel_size', slider2.value);
+            formData.append('filter_type', "arithmetic");
+
+            fetch('http://localhost:3000/filter_arithmetic_mean', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.blob())
+            .then(image => {
+                var urlCreator = window.URL || window.webkitURL;
+                var imageUrl = urlCreator.createObjectURL(image);
+                var processedImage = new Image();
+                processedImage.onload = function() {
+                    document.getElementById('second-image').src = imageUrl;
+                    imageToChannels(processedImage, 2); // обновляем изображения, разбитые по каналам
+                };
+                processedImage.src = imageUrl;
+            })
+            .catch(error => console.error('Error:', error));
+        });
+});
 
 
 document.getElementById('send-contrharmonic-mean').addEventListener('click', function() {
     var img = document.getElementById('original-image');
     var formData = new FormData();
-    formData.append('image', img.src);
-    formData.append('number1', 1);
+    fetch(img.src)
+        .then(response => response.blob())
+        .then(image => {
+            return convertToBlob(image);  // Преобразуем изображение в PNG
+        })
+        .then(pngImage => {
+            formData.append('image', pngImage);
+            formData.append('kernel_size', slider2.value);
+            formData.append('noise_type', document.getElementById('noise-type').value);
 
-    fetch('http://localhost:3000/someroute', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.blob())
-    .then(image => {
-        var urlCreator = window.URL || window.webkitURL;
-        var imageUrl = urlCreator.createObjectURL(image);
-        document.getElementById('second-image').src = imageUrl;
-        // Здесь вы можете добавить код для обработки каналов изображения
-    })
-    .catch(error => console.error('Error:', error));
-});
-
-document.getElementById('send-arithmetic-mean').addEventListener('click', function() {
-    var img = document.getElementById('original-image');
-    var formData = new FormData();
-    formData.append('image', img.src);
-    formData.append('kernel_size', slider2.value);
-    fetch('http://localhost:8080/filteram', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.blob())
-    .then(image => {
-        var urlCreator = window.URL || window.webkitURL;
-        var imageUrl = urlCreator.createObjectURL(image);
-        document.getElementById('second-image').src = imageUrl;
-        // Здесь вы можете добавить код для обработки каналов изображения
-    })
-    .catch(error => console.error('Error:', error));
+            fetch('http://localhost:3000/filter_contr_harmonic_mean', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.blob())
+            .then(image => {
+                var urlCreator = window.URL || window.webkitURL;
+                var imageUrl = urlCreator.createObjectURL(image);
+                var processedImage = new Image();
+                processedImage.onload = function() {
+                    document.getElementById('second-image').src = imageUrl;
+                    imageToChannels(processedImage, 2); // обновляем изображения, разбитые по каналам
+                };
+                processedImage.src = imageUrl;
+            })
+            .catch(error => console.error('Error:', error));
+        });
 });
 
 // Функция imageToChannels принимает изображение в качестве аргумента
-function imageToChannels(img) {
+function imageToChannels(img, container) {
     // Создаем новый элемент canvas
     var canvas = document.createElement('canvas');
     // Устанавливаем ширину и высоту canvas равными ширине и высоте изображения
@@ -184,8 +230,13 @@ function imageToChannels(img) {
     // Получаем массив данных пикселей изображения
     var data = imageData.data;
 
+    if (container === 2) {
+        var container = document.getElementById('second-image-container');
+    } else {
+        var container = document.getElementById('image-container')
+    }
     // Получаем элемент контейнера изображения
-    var container = document.getElementById('image-container');
+    
     // Очищаем контейнер изображения
     container.innerHTML = '';
 

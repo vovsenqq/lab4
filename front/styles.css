@@ -87,3 +87,15 @@ body {
     height: auto;
     margin: 10px;
 }
+
+#noise-type {
+    width: 200px;
+    height: 35px;
+    border: 1px solid #000;
+    border-radius: 5px;
+    padding: 5px;
+}
+
+#noise-type option {
+    font-size: 14px;
+}

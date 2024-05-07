@@ -5,20 +5,16 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"math"
 )
 
-func ApplyFilter(img image.Image) image.Image {
-	kernel := [][]int{
-		{1, 1, 1},
-		{1, 1, 1},
-		{1, 1, 1},
-	}
+func ApplyFilter(img image.Image, filterType string, maskSize int) image.Image {
 	pixels, err := utils.GetPixels(img)
 	if err != nil {
 		fmt.Println("Error: Image could not be converted to pixels")
 	}
 
-	convolvedPixels, err := convolve(pixels, kernel)
+	convolvedPixels, err := convolve(pixels, filterType, maskSize)
 	if err != nil {
 		fmt.Println("Error: Image could not be convolved")
 	}
@@ -37,21 +33,9 @@ func ApplyFilter(img image.Image) image.Image {
 	return newImg
 }
 
-func convolve(pixels [][]utils.Pixel, kernel [][]int) ([][]utils.Pixel, error) {
+func convolve(pixels [][]utils.Pixel, filterType string, maskSize int) ([][]utils.Pixel, error) {
 	height := len(pixels)
 	width := len(pixels[0])
-	kernelSize := len(kernel)
-
-	// Calculate the sum of the kernel
-	kernelSum := 0
-	for _, row := range kernel {
-		for _, value := range row {
-			kernelSum += value
-		}
-	}
-	if kernelSum == 0 {
-		kernelSum = 1
-	}
 
 	// Create a new 2D slice to hold the convolved pixels
 	convolvedPixels := make([][]utils.Pixel, height)
@@ -62,27 +46,69 @@ func convolve(pixels [][]utils.Pixel, kernel [][]int) ([][]utils.Pixel, error) {
 	// Convolve each pixel
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
-			sumR, sumG, sumB := 0, 0, 0
-			for ky := -kernelSize / 2; ky <= kernelSize/2; ky++ {
-				for kx := -kernelSize / 2; kx <= kernelSize/2; kx++ {
+			sumR1, sumG1, sumB1 := 0.0, 0.0, 0.0
+			sumR2, sumG2, sumB2 := 0.0, 0.0, 0.0
+			count := 0
+			for ky := -maskSize / 2; ky <= maskSize/2; ky++ {
+				for kx := -maskSize / 2; kx <= maskSize/2; kx++ {
 					// Get the corresponding pixel in the image
 					px, py := x+kx, y+ky
 					if px >= 0 && px < width && py >= 0 && py < height {
 						pixel := pixels[py][px]
-						// Get the corresponding value in the kernel
-						kernelValue := kernel[ky+kernelSize/2][kx+kernelSize/2]
-						sumR += pixel.R * kernelValue
-						sumG += pixel.G * kernelValue
-						sumB += pixel.B * kernelValue
+						if filterType == "arithmetic" {
+							sumR1 += float64(pixel.R)
+							sumG1 += float64(pixel.G)
+							sumB1 += float64(pixel.B)
+						} else if filterType == "contraharmonic_black" {
+							sumR1 += math.Pow(float64(pixel.R), 2)
+							sumG1 += math.Pow(float64(pixel.G), 2)
+							sumB1 += math.Pow(float64(pixel.B), 2)
+							sumR2 += float64(pixel.R)
+							sumG2 += float64(pixel.G)
+							sumB2 += float64(pixel.B)
+						} else if filterType == "contraharmonic_white" {
+							if pixel.R == 0 {
+								sumR2 += math.Pow(float64(3), -1)
+							} else {
+								sumR2 += math.Pow(float64(pixel.R), -1)
+							}
+							if pixel.G == 0 {
+								sumG2 += math.Pow(float64(3), -1)
+							} else {
+								sumG2 += math.Pow(float64(pixel.G), -1)
+							}
+							if pixel.B == 0 {
+								sumB2 += math.Pow(float64(3), -1)
+							} else {
+								sumB2 += math.Pow(float64(pixel.B), -1)
+							}
+							// sumR1 += math.Pow(float64(pixel.R), 0)
+							// sumG1 += math.Pow(float64(pixel.G), 0)
+							// sumB1 += math.Pow(float64(pixel.B), 0)
+							sumR1 += 1
+							sumG1 += 1
+							sumB1 += 1
+
+						}
+						count++
 					}
 				}
 			}
 			// Normalize the sums and set the convolved pixel
-			convolvedPixels[y][x] = utils.Pixel{
-				R: sumR / kernelSum,
-				G: sumG / kernelSum,
-				B: sumB / kernelSum,
-				A: 255,
+			if filterType == "arithmetic" {
+				convolvedPixels[y][x] = utils.Pixel{
+					R: int(sumR1 / float64(count)),
+					G: int(sumG1 / float64(count)),
+					B: int(sumB1 / float64(count)),
+					A: 255,
+				}
+			} else if filterType == "contraharmonic_black" || filterType == "contraharmonic_white" {
+				convolvedPixels[y][x] = utils.Pixel{
+					R: int(math.Min(math.Max(sumR1/sumR2, 0), 255)),
+					G: int(math.Min(math.Max(sumG1/sumG2, 0), 255)),
+					B: int(math.Min(math.Max(sumB1/sumB2, 0), 255)),
+					A: 255,
+				}
 			}
 		}
 	}
