@@ -7,8 +7,8 @@ import (
 )
 
 func main() {
-	http.HandleFunc("/dft", enableCors(handlers.DFTHandler))
-	http.HandleFunc("/idft", enableCors(handlers.IDFTHandler))
+	http.HandleFunc("/dfft", enableCors(handlers.DFTHandler))
+	http.HandleFunc("/idfft", enableCors(handlers.IDFTHandler))
 
 	err := http.ListenAndServe(":3002", nil)
 	if err != nil {
