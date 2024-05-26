@@ -7,10 +7,10 @@ import (
 )
 
 func main() {
-	http.HandleFunc("/filter_arithmetic_mean", enableCors(handlers.FilterHandler))
-	http.HandleFunc("/filter_contr_harmonic_mean", enableCors(handlers.FilterHandler))
+	http.HandleFunc("/dft", enableCors(handlers.DFTHandler))
+	http.HandleFunc("/idft", enableCors(handlers.IDFTHandler))
 
-	err := http.ListenAndServe(":3000", nil)
+	err := http.ListenAndServe(":3001", nil)
 	if err != nil {
 		fmt.Println("Server failed to start:", err)
 	}

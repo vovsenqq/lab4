@@ -8,35 +8,33 @@
     <div id="image-section" style="margin-top: 40px">
         <img id="original-image">
         <div id="image-container"></div>
+        <div id="image-container-spec"></div>
     </div>
     <div id="button-container">
-        <button id="reset-button">Reset</button>
-        <div id="button-container2">
-            <!-- <button id="add-bipolar">Add bipolar noise</button>
-            <button id="add-unipolar">Add unipolar noise</button> -->
-        </div>
-        <!-- <input type="range" min="1" max="10" value="5" class="slider" id="myRange">
-        <p style="font: italic small-caps bold 16px/2 cursive">How much % noise add: <span id="demo"></span> %</p> -->
+        <button id="butterworth" style="margin-top: 30px;">Butterworth filter Low freq(n=3)</button>
+        <button id="gaussian">Gaussian filter Low freq</button>
 
-        <button id="send-butterworth" style="margin-top: 30px;">Butterworth filter Low freq(n=3)</button>
-        <!-- <select id="noise-type" style="margin-bottom: 20px; margin-top: 10px;">
-            <option value="white">White noise</option>
-            <option value="black">Black noise</option>
-        </select> -->
-        <button id="send-gaussian">Gaussian filter Low freq</button>
-<!-- 
-        <div id="grid" style="margin-top: 30px;"></div>
-        <input type="range" min="3" max="9" step="2" value="3" id="slider_mask" style="margin-top: 20px;"> -->
+        <input type="range" min="1" max="100" step="1" value="50" class="sliderRadius" id="Radius">
+        <p style="font: italic small-caps bold 16px/2 cursive">Filter radius: <span id="demo"></span></p>
+
+        <div id="canvases">
+            <canvas id="redCanvas" width="170" height="170"></canvas>
+            <canvas id="greenCanvas" width="170" height="170"></canvas>
+            <canvas id="blueCanvas" width="170" height="170"></canvas>
+        </div>
     </div>
     <div id="second-image-section" style="margin-top: 40px">
         <img id="second-image">
         <div id="second-image-container"></div>
+        <div id="second-image-container-spec"></div>
+        <div style="display: inline-flex; margin-left: 10px; justify-content: space-between;">
+            <p id="red-energy" style="margin-right: 30px;"></p>
+            <p id="green-energy" style="margin-right: 22px;"></p>
+            <p id="blue-energy"></p>
+        </div>
     </div>
     <script src="imageUpload.js"></script>
-    <script src="noiseFunctions.js"></script>
     <script src="imageProcessing.js"></script>
-    <script src="noiseSlider.js"></script>
-    <script src="maskSlider.js"></script>
-
+    <script src="filterSlider.js"></script>
 </body>
 </html>
