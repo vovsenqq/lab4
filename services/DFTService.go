@@ -12,6 +12,7 @@ func ApplyDFT(img image.Image) ([][]float64, [][]float64, [][]float64, [][]float
 	pixels, err := utils.GetPixels(img)
 	if err != nil {
 		fmt.Println("Error: Image could not be converted to pixels")
+		return nil, nil, nil, nil, nil, nil
 	}
 
 	height := len(pixels)
