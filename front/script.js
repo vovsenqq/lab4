@@ -109,7 +109,7 @@ function sendProjectionData(projectionData, callback) {
     formData.append('inputRe', JSON.stringify(projectionData));
     formData.append('inputIm', JSON.stringify(array));
 
-    fetch('http://localhost:3002/dfft', {
+    fetch('http://194.87.244.74:3003/dfft', {
         method: 'POST',
         body: formData
     })
@@ -123,7 +123,7 @@ function sendFilteredProjectionData2(realInput, imInput, callback) {
     formData.append('inputRe', JSON.stringify(realInput));
     formData.append('inputIm', JSON.stringify(imInput));
 
-    fetch('http://localhost:3002/idfft', {
+    fetch('http://194.87.244.74:3003/idfft', {
         method: 'POST',
         body: formData
     })
@@ -137,7 +137,7 @@ function sendFilteredProjectionData(realInput, imInput, restore) {
     formData.append('inputRe', JSON.stringify(realInput));
     formData.append('inputIm', JSON.stringify(imInput));
 
-    fetch('http://localhost:3002/idfft', {
+    fetch('http://194.87.244.74:3003/idfft', {
         method: 'POST',
         body: formData
     })
@@ -161,7 +161,7 @@ function sendShiftedProjectionData2(realInput, imInput, callback) {
     formData.append('inputRe', JSON.stringify(realInput));
     formData.append('inputIm', JSON.stringify(imInput));
 
-    fetch('http://localhost:3002/dfft', {
+    fetch('http://194.87.244.74:3003/dfft', {
         method: 'POST',
         body: formData
     })
@@ -175,7 +175,7 @@ function sendShiftedProjectionData(realInput, imInput, restore) {
     formData.append('inputRe', JSON.stringify(realInput));
     formData.append('inputIm', JSON.stringify(imInput));
 
-    fetch('http://localhost:3002/dfft', {
+    fetch('http://194.87.244.74:3003/dfft', {
         method: 'POST',
         body: formData
     })
@@ -332,7 +332,7 @@ async function sendSpectrumDataAsync(realPart, imaginaryPart) {
     formData.append('inputRe', JSON.stringify(realPart));
     formData.append('inputIm', JSON.stringify(imaginaryPart));
 
-    const response = await fetch('http://localhost:3002/idfft2d', {
+    const response = await fetch('http://194.87.244.74:3003/idfft2d', {
         method: 'POST',
         body: formData
     });
