@@ -9,6 +9,7 @@ import (
 func main() {
 	http.HandleFunc("/dfft", enableCors(handlers.DFTHandler))
 	http.HandleFunc("/idfft", enableCors(handlers.IDFTHandler))
+	http.HandleFunc("/idfft2d", enableCors(handlers.IDFT2DHandler))
 
 	err := http.ListenAndServe(":3002", nil)
 	if err != nil {

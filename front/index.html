@@ -1,40 +1,75 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <link rel="stylesheet" type="text/css" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Processing Interface</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        .full-width {
+            grid-column: span 2;
+        }
+        canvas {
+            border: 1px solid #000;
+            display: block;
+        }
+        #spectrumCanvas {
+            width: 800px;
+            height: 800px;
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+    </style>
 </head>
 <body>
-    <input type="file" id="image-upload" accept=".bmp">
-    <div id="image-section" style="margin-top: 40px">
-        <img id="original-image">
-        <div id="image-container"></div>
-        <div id="image-container-spec"></div>
+    <div class="controls">
+        <input type="file" id="fileInput">
+        <label>
+            <input type="checkbox" id="filterProjections"> Отфильтровать проекции
+        </label>
+        <br>
+        <label>Частота среза:
+            <input type="number" id="cutOffFrequency" step="0.1" value="10">
+        </label>
+        <br>
+        <label>Номер проекции:
+            <input type="number" id="projectionNumber" min="1" value="1">
+        </label>
+        <br>
+        <button onclick="showProjection()">Показать проекцию</button>
+        <button onclick="restore()">Восстановить</button>
+        <button onclick="downloadImages()">Скачать изображения</button>
     </div>
-    <div id="button-container">
-        <button id="butterworth" style="margin-top: 30px;">Butterworth filter Low freq(n=3)</button>
-        <button id="gaussian">Gaussian filter Low freq</button>
-
-        <input type="range" min="1" max="100" step="1" value="50" class="sliderRadius" id="Radius">
-        <p style="font: italic small-caps bold 16px/2 cursive">Filter radius: <span id="demo"></span></p>
-
-        <div id="canvases">
-            <canvas id="redCanvas" width="170" height="170"></canvas>
-            <canvas id="greenCanvas" width="170" height="170"></canvas>
-            <canvas id="blueCanvas" width="170" height="170"></canvas>
+    <div class="container">
+        <div>
+            <canvas id="projectionCanvas"></canvas>
+        </div>
+        <div>
+            <canvas id="spectrumProjectionCanvas"></canvas>
+        </div>
+        <div class="full-width">
+            <canvas id="shiftedProjectionCanvas"></canvas>
+        </div>
+        <div class="full-width">
+            <canvas id="shiftedSpectrumProjectionCanvas"></canvas>
+        </div>
+        <div>
+            <canvas id="spectrumCanvas" width="300" height="300"></canvas>
+        </div>
+        <div>
+            <canvas id="restoredSectionCanvas" width="300" height="300"></canvas>
         </div>
     </div>
-    <div id="second-image-section" style="margin-top: 40px">
-        <img id="second-image">
-        <div id="second-image-container"></div>
-        <div id="second-image-container-spec"></div>
-        <div style="display: inline-flex; margin-left: 10px; justify-content: space-between;">
-            <p id="red-energy" style="margin-right: 30px;"></p>
-            <p id="green-energy" style="margin-right: 22px;"></p>
-            <p id="blue-energy"></p>
-        </div>
-    </div>
-    <script src="imageUpload.js"></script>
-    <script src="imageProcessing.js"></script>
-    <script src="filterSlider.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>

@@ -1,62 +1,69 @@
 package handlers
 
 import (
-	"app/services"
-	"bytes"
+	"app/services" // Предполагается, что у вас есть пакет services с функцией ApplyDFT
 	"encoding/json"
-	"image"
-	"io"
+	"fmt"
 	"net/http"
 )
 
-// DFTHandler обрабатывает HTTP-запросы для применения Фурье-преобразования к изображению
 func DFTHandler(w http.ResponseWriter, r *http.Request) {
-	// Разбор многокомпонентной формы
-	err := r.ParseMultipartForm(30 << 20)
-	if err != nil {
-		http.Error(w, "could not parse multipart form", http.StatusBadRequest)
+	// Обработка CORS и HTTP-методов
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	// Получение файла изображения из формы
-	file, _, err := r.FormFile("image")
-	if err != nil {
-		http.Error(w, "could not get image file", http.StatusBadRequest)
-		return
-	}
-	defer file.Close()
-
-	// Чтение данных изображения
-	imgData, err := io.ReadAll(file)
-	if err != nil {
-		http.Error(w, "could not read image data", http.StatusBadRequest)
+	if err := r.ParseMultipartForm(30 << 20); err != nil { // 30 MB
+		http.Error(w, "could not parse form", http.StatusBadRequest)
+		fmt.Println("Error parsing form:", err)
 		return
 	}
 
-	// Декодирование изображения
-	img, _, err := image.Decode(bytes.NewReader(imgData))
-	if err != nil {
-		http.Error(w, "could not decode image", http.StatusBadRequest)
+	inputReStr := r.FormValue("inputRe")
+	if inputReStr == "" {
+		http.Error(w, "missing inputRe data", http.StatusBadRequest)
+		fmt.Println("Error: missing inputRe data")
 		return
 	}
+
+	inputImStr := r.FormValue("inputIm")
+	if inputImStr == "" {
+		http.Error(w, "missing inputRe data", http.StatusBadRequest)
+		fmt.Println("Error: missing inputRe data")
+		return
+	}
+
+	var inputRe []float64
+	if err := json.Unmarshal([]byte(inputReStr), &inputRe); err != nil {
+		http.Error(w, "could not decode JSON request", http.StatusBadRequest)
+		fmt.Println("Error decoding JSON:", err)
+		return
+	}
+
+	var inputIm []float64
+	if err := json.Unmarshal([]byte(inputImStr), &inputIm); err != nil {
+		http.Error(w, "could not decode JSON request", http.StatusBadRequest)
+		fmt.Println("Error decoding JSON:", err)
+		return
+	}
+
+	// fmt.Println("Received data:", inputRe)
 
 	// Применение Фурье-преобразования
-	// redRe, redIm, greenRe, greenIm, blueRe, blueIm, redImage, greenImage, blueImage := services.ApplyDFT(img)
-	redRe, redIm, greenRe, greenIm, blueRe, blueIm := services.ApplyDFT(img)
-
+	resRe, resIm := services.ApplyDFT(inputRe, inputIm)
 	response := map[string]interface{}{
-		"redRe":   redRe,
-		"redIm":   redIm,
-		"greenRe": greenRe,
-		"greenIm": greenIm,
-		"blueRe":  blueRe,
-		"blueIm":  blueIm,
-		// "redImage":   bufRed.Bytes(),
-		// "greenImage": bufGreen.Bytes(),
-		// "blueImage":  bufBlue.Bytes(),
+		"resRe": resRe,
+		"resIm": resIm,
 	}
 
 	// Установка заголовков и отправка ответа
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "could not encode response", http.StatusInternalServerError)
+		fmt.Println("Error encoding JSON response:", err)
+	}
 }
