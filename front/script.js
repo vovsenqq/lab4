@@ -197,17 +197,23 @@ function computeSpectrum(realPart, imaginaryPart) {
 }
 
 function padAndShiftArray(arr, padSize) {
+    // Добавление нулевых элементов в начало и конец массива
     const paddedArray = [
         ...new Array(padSize).fill(0),
         ...arr,
         ...new Array(padSize).fill(0)
     ];
 
-    const shift = Math.floor((padSize * 2 + arr.length) / 2) % paddedArray.length;
-    return [
+    // Вычисление сдвига
+    const shift = Math.floor((padSize * 2 + arr.length) / 2);
+
+    // Циклический сдвиг массива
+    const shiftedArray = [
         ...paddedArray.slice(-shift),
         ...paddedArray.slice(0, -shift)
     ];
+
+    return shiftedArray;
 }
 
 function applyLowPassGaussianFilter(spectrum, cutoffFrequency) {
@@ -215,11 +221,12 @@ function applyLowPassGaussianFilter(spectrum, cutoffFrequency) {
     const sigma = cutoffFrequency;
 
     return spectrum.map((value, i) => {
-        const distance = i - size / 2;
-        const gaussianLowPass = Math.exp(-0.5 * (distance / sigma) ** 2);
-        return value * gaussianLowPass;
+        const distance = Math.sqrt((i - size / 2) ** 2);
+        const filter = 1 / (1 + (distance / sigma) ** 2);
+        return value * filter;
     });
 }
+
 
 function updateChart(canvasId, label, data, xMax) {
     if (charts[canvasId]) {
@@ -282,7 +289,6 @@ async function restore() {
             const fftData = await sendProjectionDataAsync(projectionData);
             let realPart = fftData.resRe;
             let imaginaryPart = fftData.resIm;
-
             if (document.getElementById('filterProjections').checked) {
                 realPart = applyLowPassGaussianFilter(realPart, cutOffFrequency);
                 imaginaryPart = applyLowPassGaussianFilter(imaginaryPart, cutOffFrequency);
@@ -302,13 +308,10 @@ async function restore() {
             console.error(`Error processing projection ${index + 1}:`, error);
         }
     }
-
-    const spectrum = synthesize2DSpectrum(transformedProjections);
+    // console.log(transformedProjections);
+    const spectrum = synthesize2DSpectrum(transformedProjections, numMeasurements, numProjections, angularStep);
     visualizeSpectrum(spectrum);
 
-
-    // // Генерация синтезированного спектра
-    // const spectrum = synthesize2DSpectrum(transformedProjections);
 
     // Преобразование спектра в двумерные массивы для отправки
     const N = Math.sqrt(spectrum.length);
@@ -317,6 +320,7 @@ async function restore() {
 
     try {
         // Отправка данных спектра на сервер для восстановления сигнала
+        console.log(realPart);
         const restoredData = await sendSpectrumDataAsync(realPart, imaginaryPart);
         const restoredReal = restoredData.resRe;
         const restoredImaginary = restoredData.resIm;
@@ -327,6 +331,7 @@ async function restore() {
         console.error('Error restoring signal:', error);
     }
 }
+
 async function sendSpectrumDataAsync(realPart, imaginaryPart) {
     const formData = new FormData();
     formData.append('inputRe', JSON.stringify(realPart));
@@ -338,12 +343,14 @@ async function sendSpectrumDataAsync(realPart, imaginaryPart) {
     });
     return response.json();
 }
-function synthesize2DSpectrum(transformedProjections) {
-    const N = numMeasurements;
+
+function synthesize2DSpectrum(transformedProjections, numMeasurements, numProjections, angularStep) {
+    const N = 800;
     const M = numProjections;
     const dQ = angularStep;
     let Q = 0;
-    const synthesized2DSpectrum = new Array(N * N).fill().map(() => ({ re: 0, im: 0 }));
+    const synthesized2DSpectrum = Array.from({ length: N * N }, () => ({ re: 0, im: 0 }));
+    console.log(synthesized2DSpectrum);
     for (let k = 0; k < M; k++) {
         const sinTom = Math.sin(degToRad(Q));
         const cosTom = Math.cos(degToRad(Q));
@@ -358,21 +365,21 @@ function synthesize2DSpectrum(transformedProjections) {
             const j = Math.round(wy + Math.floor(N / 2));
 
             if (i >= 0 && i < N && j >= 0 && j < N) {
-                const index = i * N + j;
-                synthesized2DSpectrum[index].re = realPart[s];
-                synthesized2DSpectrum[index].im = imaginaryPart[s];
+                synthesized2DSpectrum[i * N + j].re += realPart[s];
+                synthesized2DSpectrum[i * N + j].im += imaginaryPart[s];
             }
         }
 
         Q += dQ;
     }
-    console.log(synthesized2DSpectrum)
+    // console.log(synthesized2DSpectrum);
     return synthesized2DSpectrum;
 }
 
 function degToRad(degrees) {
     return degrees * (Math.PI / 180);
 }
+
 
 function visualizeSpectrum(spectrum) {
     const canvasId = 'spectrumCanvas';
@@ -385,73 +392,63 @@ function visualizeSpectrum(spectrum) {
         return;
     }
 
+    // Преобразование спектра в логарифмическую шкалу
     const logScale = spectrum.map(point => Math.log(1 + Math.sqrt(point.re ** 2 + point.im ** 2)));
-    const maxLogScale = Math.max(...logScale);
-    const minLogScale = Math.min(...logScale);
+    let maxLogScale = -Infinity;
+    let minLogScale = Infinity;
 
-    // Create a higher resolution canvas
-    const highResCanvas = document.createElement('canvas');
-    const highResCtx = highResCanvas.getContext('2d');
-    highResCanvas.width = N * 2; // For example, doubling the resolution
-    highResCanvas.height = N * 2;
-
-    const highResImageData = highResCtx.createImageData(highResCanvas.width, highResCanvas.height);
-    const highResData = highResImageData.data;
-
-    for (let i = 0; i < highResCanvas.height; i++) {
-        for (let j = 0; j < highResCanvas.width; j++) {
-            const x = Math.floor(i / 2); // Mapping high resolution to original resolution
-            const y = Math.floor(j / 2);
-            const index = x * N + y;
-            const value = logScale[index];
-
-            // Normalize value to [0, 255]
-            const normalizedValue = 255 * (value - minLogScale) / (maxLogScale - minLogScale);
-
-            // Set pixel color (red)
-            const pixelIndex = (i * highResCanvas.width + j) * 4;
-            highResData[pixelIndex] = normalizedValue;     // Red
-            highResData[pixelIndex + 1] = 0;               // Green
-            highResData[pixelIndex + 2] = 0;               // Blue
-            highResData[pixelIndex + 3] = 255;             // Alpha
+    // Нахождение минимальных и максимальных значений
+    for (let i = 0; i < logScale.length; i++) {
+        if (logScale[i] > maxLogScale) {
+            maxLogScale = logScale[i];
+        }
+        if (logScale[i] < minLogScale) {
+            minLogScale = logScale[i];
         }
     }
 
-    // Clear original canvas before drawing
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Создание данных изображения
+    const imageData = ctx.createImageData(N, N);
+    const data = imageData.data;
 
-    // Draw the high resolution image data on the high resolution canvas
-    highResCtx.putImageData(highResImageData, 0, 0);
+    for (let i = 0; i < N; i++) {
+        for (let j = 0; j < N; j++) {
+            const index = i * N + j;
+            const value = logScale[index];
 
-    // Scale the high resolution canvas down to the original canvas size
-    ctx.drawImage(highResCanvas, 0, 0, canvas.width, canvas.height);
-}
+            // Нормализация значения в диапазон [0, 255]
+            const normalizedValue = 255 * (value - minLogScale) / (maxLogScale - minLogScale);
 
-async function restoreAndDisplay() {
-    // Генерация синтезированного спектра
-    const spectrum = synthesize2DSpectrum(transformedProjections);
-
-    // Преобразование спектра в двумерные массивы для отправки
-    const N = Math.sqrt(spectrum.length);
-    const realPart = Array.from({ length: N }, (_, i) => spectrum.slice(i * N, (i + 1) * N).map(point => point.re));
-    const imaginaryPart = Array.from({ length: N }, (_, i) => spectrum.slice(i * N, (i + 1) * N).map(point => point.im));
-
-    try {
-        // Отправка данных спектра на сервер для восстановления сигнала
-        const restoredData = await sendSpectrumDataAsync(realPart, imaginaryPart);
-        const restoredReal = restoredData.resRe;
-        const restoredImaginary = restoredData.resIm;
-        // Отображение восстановленного сигнала на canvas
-        displayRestoredImage(restoredReal, restoredImaginary, 'restoredSectionCanvas');
-    } catch (error) {
-        console.error('Error restoring signal:', error);
+            const pixelIndex = (i * N + j) * 4;
+            data[pixelIndex] = normalizedValue;     // Red
+            data[pixelIndex + 1] = 0;               // Green
+            data[pixelIndex + 2] = 0;               // Blue
+            data[pixelIndex + 3] = 255;             // Alpha
+        }
     }
+
+    // Отрисовка изображения на канвасе
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.putImageData(imageData, 0, 0);
 }
+
+
+
 
 function displayRestoredImage(realPart, imaginaryPart, canvasId) {
     const canvas = document.getElementById(canvasId);
     const ctx = canvas.getContext('2d');
     const N = realPart.length;
+
+    // Находим максимальное значение
+    let maxRealPart = -Infinity;
+    let maxImaginaryPart = -Infinity;
+    for (let x = 0; x < N; x++) {
+        for (let y = 0; y < N; y++) {
+            maxRealPart = Math.max(maxRealPart, realPart[x][y]);
+            maxImaginaryPart = Math.max(maxImaginaryPart, imaginaryPart[x][y]);
+        }
+    }
 
     const imageData = ctx.createImageData(N, N);
     const data = imageData.data;
@@ -462,19 +459,21 @@ function displayRestoredImage(realPart, imaginaryPart, canvasId) {
             const value = Math.sqrt(realPart[x][y] ** 2 + imaginaryPart[x][y] ** 2);
 
             // Нормализуем значение в диапазоне от 0 до 255
-            const normalizedValue = Math.min(255, Math.max(0, value * 255 / Math.max(...realPart.flat(), ...imaginaryPart.flat())));
+            const normalizedValue = Math.min(255, Math.max(0, value * 255 / Math.max(maxRealPart, maxImaginaryPart)));
 
             // Устанавливаем пиксельное значение (оттенок серого)
             const index = (x * N + y) * 4;
             data[index] = normalizedValue;     // Красный канал
-            data[index + 1] = normalizedValue; // Зеленый канал
-            data[index + 2] = normalizedValue; // Синий канал
+            data[index + 1] = 0 // Зеленый канал
+            data[index + 2] = 0 // Синий канал
             data[index + 3] = 255;             // Альфа канал (непрозрачный)
         }
     }
 
     ctx.putImageData(imageData, 0, 0);
 }
+
+
 
 // Создание пустых графиков при загрузке страницы
 window.onload = function() {
