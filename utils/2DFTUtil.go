@@ -82,7 +82,7 @@ func FT2D(re, im [][]float64, dir int) ([][]float64, [][]float64) {
 			}
 		}
 		// Домножение данных на (-1)^(x+y) после обратного преобразования
-		preProcess(outRe, outIm)
+		// preProcess(outRe, outIm)
 	}
 
 	return outRe, outIm

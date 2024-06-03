@@ -30,6 +30,7 @@ function loadData(event) {
 
         parseFileHeader(lines);
         projections = parseProjections(lines.slice(5));
+        drawSinogram(projections)
     };
     reader.readAsText(file);
 }
@@ -38,6 +39,7 @@ function parseFileHeader(lines) {
     numMeasurements = parseInt(lines[1]);
     numProjections = parseInt(lines[2]);
     angularStep = parseFloat(lines[3]);
+    console.log(numMeasurements, numProjections, angularStep);
 }
 
 function parseProjections(lines) {
@@ -109,7 +111,7 @@ function sendProjectionData(projectionData, callback) {
     formData.append('inputRe', JSON.stringify(projectionData));
     formData.append('inputIm', JSON.stringify(array));
 
-    fetch('http://194.87.244.74:3003/dfft', {
+    fetch('http://127.0.0.1:3003/dfft', {
         method: 'POST',
         body: formData
     })
@@ -123,7 +125,7 @@ function sendFilteredProjectionData2(realInput, imInput, callback) {
     formData.append('inputRe', JSON.stringify(realInput));
     formData.append('inputIm', JSON.stringify(imInput));
 
-    fetch('http://194.87.244.74:3003/idfft', {
+    fetch('http://127.0.0.1:3003/idfft', {
         method: 'POST',
         body: formData
     })
@@ -137,7 +139,7 @@ function sendFilteredProjectionData(realInput, imInput, restore) {
     formData.append('inputRe', JSON.stringify(realInput));
     formData.append('inputIm', JSON.stringify(imInput));
 
-    fetch('http://194.87.244.74:3003/idfft', {
+    fetch('http://127.0.0.1:3003/idfft', {
         method: 'POST',
         body: formData
     })
@@ -161,7 +163,7 @@ function sendShiftedProjectionData2(realInput, imInput, callback) {
     formData.append('inputRe', JSON.stringify(realInput));
     formData.append('inputIm', JSON.stringify(imInput));
 
-    fetch('http://194.87.244.74:3003/dfft', {
+    fetch('http://127.0.0.1:3003/dfft', {
         method: 'POST',
         body: formData
     })
@@ -175,7 +177,7 @@ function sendShiftedProjectionData(realInput, imInput, restore) {
     formData.append('inputRe', JSON.stringify(realInput));
     formData.append('inputIm', JSON.stringify(imInput));
 
-    fetch('http://194.87.244.74:3003/dfft', {
+    fetch('http://127.0.0.1:3003/dfft', {
         method: 'POST',
         body: formData
     })
@@ -204,8 +206,8 @@ function padAndShiftArray(arr, padSize) {
         ...new Array(padSize).fill(0)
     ];
 
-    // Вычисление сдвига
-    const shift = Math.floor((padSize * 2 + arr.length) / 2);
+    // Вычисление сдвига на половину длины нового массива
+    const shift = Math.floor(paddedArray.length / 2);
 
     // Циклический сдвиг массива
     const shiftedArray = [
@@ -215,6 +217,7 @@ function padAndShiftArray(arr, padSize) {
 
     return shiftedArray;
 }
+
 
 function applyLowPassGaussianFilter(spectrum, cutoffFrequency) {
     const size = spectrum.length;
@@ -308,8 +311,8 @@ async function restore() {
             console.error(`Error processing projection ${index + 1}:`, error);
         }
     }
-    // console.log(transformedProjections);
-    const spectrum = synthesize2DSpectrum(transformedProjections, numMeasurements, numProjections, angularStep);
+
+    const spectrum = synthesize2DSpectrum(transformedProjections, numProjections, angularStep);
     visualizeSpectrum(spectrum);
 
 
@@ -317,6 +320,7 @@ async function restore() {
     const N = Math.sqrt(spectrum.length);
     const realPart = Array.from({ length: N }, (_, i) => spectrum.slice(i * N, (i + 1) * N).map(point => point.re));
     const imaginaryPart = Array.from({ length: N }, (_, i) => spectrum.slice(i * N, (i + 1) * N).map(point => point.im));
+
 
     try {
         // Отправка данных спектра на сервер для восстановления сигнала
@@ -337,42 +341,57 @@ async function sendSpectrumDataAsync(realPart, imaginaryPart) {
     formData.append('inputRe', JSON.stringify(realPart));
     formData.append('inputIm', JSON.stringify(imaginaryPart));
 
-    const response = await fetch('http://194.87.244.74:3003/idfft2d', {
+    const response = await fetch('http://127.0.0.1:3003/idfft2d', {
         method: 'POST',
         body: formData
     });
     return response.json();
 }
 
-function synthesize2DSpectrum(transformedProjections, numMeasurements, numProjections, angularStep) {
-    const N = 800;
+function roundToEven(value) {
+    const floored = Math.floor(value);
+    const fraction = value - floored;
+    if (fraction > 0.5 || (fraction === 0.5 && (floored % 2 !== 0))) {
+        return floored + 1;
+    } else {
+        return floored;
+    }
+}
+
+function synthesize2DSpectrum(transformedProjections, numProjections, angularStep) {
+    const N = transformedProjections[0].realPart.length;
     const M = numProjections;
     const dQ = angularStep;
-    let Q = 0;
+    const N_half = Math.floor(N / 2);
     const synthesized2DSpectrum = Array.from({ length: N * N }, () => ({ re: 0, im: 0 }));
-    console.log(synthesized2DSpectrum);
+
+    let Q = 0;
     for (let k = 0; k < M; k++) {
-        const sinTom = Math.sin(degToRad(Q));
-        const cosTom = Math.cos(degToRad(Q));
+        const angleRad = degToRad(Q);
+        const sinTom = Math.sin(angleRad);
+        const cosTom = Math.cos(angleRad);
         const realPart = transformedProjections[k].realPart;
         const imaginaryPart = transformedProjections[k].imaginaryPart;
 
         for (let s = 0; s < N; s++) {
-            const t = s - Math.floor(N / 2);
+            const t = s - N_half;
             const wx = t * cosTom;
             const wy = t * sinTom;
-            const i = Math.round(wx + Math.floor(N / 2));
-            const j = Math.round(wy + Math.floor(N / 2));
+            // const i = Math.round(wx + N_half);
+            // const j = Math.round(wy + N_half);
+            const i = roundToEven(wx + N_half);
+            const j = roundToEven(wy + N_half);
 
             if (i >= 0 && i < N && j >= 0 && j < N) {
-                synthesized2DSpectrum[i * N + j].re += realPart[s];
-                synthesized2DSpectrum[i * N + j].im += imaginaryPart[s];
+                const index = i * N + j;
+                synthesized2DSpectrum[index].re += realPart[s];
+                synthesized2DSpectrum[index].im += imaginaryPart[s];
             }
         }
 
         Q += dQ;
     }
-    // console.log(synthesized2DSpectrum);
+
     return synthesized2DSpectrum;
 }
 
@@ -433,20 +452,17 @@ function visualizeSpectrum(spectrum) {
 }
 
 
-
-
 function displayRestoredImage(realPart, imaginaryPart, canvasId) {
     const canvas = document.getElementById(canvasId);
     const ctx = canvas.getContext('2d');
     const N = realPart.length;
 
-    // Находим максимальное значение
-    let maxRealPart = -Infinity;
-    let maxImaginaryPart = -Infinity;
+    // Находим максимальное значение амплитуды
+    let maxAmplitude = -Infinity;
     for (let x = 0; x < N; x++) {
         for (let y = 0; y < N; y++) {
-            maxRealPart = Math.max(maxRealPart, realPart[x][y]);
-            maxImaginaryPart = Math.max(maxImaginaryPart, imaginaryPart[x][y]);
+            const value = Math.sqrt(realPart[x][y] ** 2 + imaginaryPart[x][y] ** 2);
+            maxAmplitude = Math.max(maxAmplitude, value);
         }
     }
 
@@ -455,17 +471,16 @@ function displayRestoredImage(realPart, imaginaryPart, canvasId) {
 
     for (let x = 0; x < N; x++) {
         for (let y = 0; y < N; y++) {
-            const i = x * N + y;
             const value = Math.sqrt(realPart[x][y] ** 2 + imaginaryPart[x][y] ** 2);
 
             // Нормализуем значение в диапазоне от 0 до 255
-            const normalizedValue = Math.min(255, Math.max(0, value * 255 / Math.max(maxRealPart, maxImaginaryPart)));
+            const normalizedValue = Math.min(255, Math.max(0, value * 255 / maxAmplitude));
 
             // Устанавливаем пиксельное значение (оттенок серого)
-            const index = (x * N + y) * 4;
+            const index = (y * N + x) * 4; // Индексация по строкам
             data[index] = normalizedValue;     // Красный канал
-            data[index + 1] = 0 // Зеленый канал
-            data[index + 2] = 0 // Синий канал
+            data[index + 1] = 125; // Зеленый канал
+            data[index + 2] = 125; // Синий канал
             data[index + 3] = 255;             // Альфа канал (непрозрачный)
         }
     }
@@ -474,14 +489,86 @@ function displayRestoredImage(realPart, imaginaryPart, canvasId) {
 }
 
 
-
 // Создание пустых графиков при загрузке страницы
 window.onload = function() {
-    // updateChart('sinogramCanvas', 'Sinogram Model', Array(200).fill(0), 200);
     updateChart('projectionCanvas', 'Projection', Array(200).fill(0), 200);
     updateChart('spectrumProjectionCanvas', 'Projection Spectrum', Array(200).fill(0), 200);
     updateChart('shiftedProjectionCanvas', 'Shifted Projection', Array(800).fill(0), 800);
     updateChart('shiftedSpectrumProjectionCanvas', 'Shifted Spectrum Projection', Array(800).fill(0), 800);
-    // updateChart('spectrumCanvas', 'Synthesized Section Spectrum', Array(200).fill(0), 200);
-    // updateChart('restoredSectionCanvas', 'Restored Section', Array(200).fill(0), 200);
+}
+
+
+
+const button = document.getElementById('test');
+let isAltered = false;
+
+// Function to manipulate the image data
+function manipulateImage() {
+    const canvas = document.getElementById('restoredSectionCanvas');
+    const context = canvas.getContext('2d');
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+
+    for (let i = 0; i < data.length; i += 4) {
+        if (!isAltered) {
+            // Set green and blue channels to 0
+            data[i + 1] = 0; // Green
+            data[i + 2] = 0; // Blue
+        } else {
+            // Set green and blue channels to 125
+            data[i + 1] = 125; // Green
+            data[i + 2] = 125; // Blue
+        }
+    }
+
+    context.putImageData(imageData, 0, 0);
+    isAltered = !isAltered;
+}
+
+// Add event listener to the button
+button.addEventListener('click', manipulateImage);
+
+
+function drawSinogram(projections) {
+    const canvas = document.getElementById('sinogramCanvas');
+    const context = canvas.getContext('2d');
+
+    const M = projections.length; // Number of projections
+    const N = projections[0].length; // Length of each projection
+
+    const width = 200;
+    const height = 200;
+
+    const imageData = context.createImageData(width, height);
+
+    // Calculate vertical offset for centering the sinogram
+    const verticalOffset = Math.floor((height - M) / 2);
+
+    // Find min and max values in the projections
+    let minValue = Infinity;
+    let maxValue = -Infinity;
+    for (const projection of projections) {
+        for (const value of projection) {
+            if (value < minValue) minValue = value;
+            if (value > maxValue) maxValue = value;
+        }
+    }
+
+    // Normalize the projections and draw the sinogram, filling empty spaces with 0
+    for (let i = 0; i < height; i++) {
+        for (let j = 0; j < width; j++) {
+            let value = 0; // Default value for empty spaces
+            if (i >= verticalOffset && i < verticalOffset + M && j < N) {
+                value = projections[i - verticalOffset][j];
+            }
+            const scaleValue = Math.round((value - minValue) / (maxValue - minValue) * 255);
+            const pixelIndex = (i * width + j) * 4;
+            imageData.data[pixelIndex] = scaleValue; // Red
+            imageData.data[pixelIndex + 1] = scaleValue; // Green
+            imageData.data[pixelIndex + 2] = scaleValue; // Blue
+            imageData.data[pixelIndex + 3] = 255; // Alpha
+        }
+    }
+
+    context.putImageData(imageData, 0, 0);
 }

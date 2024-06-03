@@ -11,7 +11,7 @@ func main() {
 	http.HandleFunc("/idfft", enableCors(handlers.IDFTHandler))
 	http.HandleFunc("/idfft2d", enableCors(handlers.IDFT2DHandler))
 
-	err := http.ListenAndServe(":3002", nil)
+	err := http.ListenAndServe(":3003", nil)
 	if err != nil {
 		fmt.Println("Server failed to start:", err)
 	}
